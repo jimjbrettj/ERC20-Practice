@@ -1,5 +1,7 @@
 pragma solidity ^0.5.0;
-
+/* 
+Dummy Comment
+*/
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -14,7 +16,7 @@ contract TutorialToken is ERC20 {
 	uint256 public rate;
 	uint256 public weiRaised;
 
-
+      
 	constructor() public {
 		rate = 10;
 		wallet = msg.sender;
