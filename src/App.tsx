@@ -57,18 +57,6 @@ class App extends React.Component {
   }
 
   async componentDidMount() {
-    // TODO: Do all this stuff once onComponentDidMount
-    // Same with all my async shit
-    // if (typeof web3 !== 'undefined') {
-    //   web3Provider = web3.currentProvider;
-    //   web3 = new Web3(web3.currentProvider);
-    // } else {
-    //   // set the provider you want from Web3.providers
-    //   web3Provider = new Web3.providers.HttpProvider('https://services.jade.builders/core-geth/kotti/1.11.2');
-    //   web3 = new Web3(web3Provider);
-    // }
-    // console.log(web3.currentProvider);
-
     if (typeof (window as any).ethereum !== 'undefined') {
       const ethereum = (window as any).ethereum
       web3Provider = ethereum || web3.currentProvider;
@@ -82,7 +70,7 @@ class App extends React.Component {
       web3 = new Web3(web3Provider);
     }
 
-    // contract = await deployTutorialToken();
+    contract = await deployTutorialToken();
     // var contractMethods = contract._parent.methods;
     // console.dir(contract);
     //console.log("Contract deploy address: " + contract._parent.options.address);
