@@ -4,38 +4,51 @@ import React from 'react';
 import TutorialTokenContractData from './contract-data/TutorialToken.json';
 import BN from "bn.js";
 
-const Web3 = require('web3');
-export let web3: typeof Web3;
+import Web3 from "web3";
+export let web3: Web3;
 
 export const GAS_LIMIT_STANDARD = 6000000;
 export let accounts: string[];
 let web3Provider;
 let contract: any;
-
+const ERC20_NETWORK = "https://services.jade.builders/core-geth/kotti/1.11.2"
 export async function deployContract<T>(contractName: string, abi:any, code:any, ...args: any[]): Promise<T> {
-  
   //const networkId = await web3.eth.net.getId();
   //const deployedAddress = abi.networks[networkId].address;
   const Contract = new web3.eth.Contract(abi);
   console.log("Contract1: ");
   console.log(Contract);
-  const t =  await Contract.deploy({ data: code });
-
   const accounts = await web3.eth.getAccounts();
+  console.log(accounts)
+  console.log("deploying contract now")
+  const contractProm = new Promise((resolve, reject) => {
+    Contract.deploy({ data: code }).send({
+      from: accounts[0],
+    }).on("transactionHash", async (receipt)=>{
+      console.log("Getting txHash")
+      web3.eth.getTransactionReceipt(receipt, (err, txh)=>{
+      debugger
+      console.log(txh.contractAddress)
+      resolve(new web3.eth.Contract(abi, txh.contractAddress))
+      })
+    })
+    .on("receipt", (reciept) => {
+      console.log("Getting address:")
+      console.log(reciept.contractAddress)
+      resolve(new web3.eth.Contract(abi, reciept.contractAddress))
+    
+    }).on("error", (err) => {
+      console.error("Terrible disaster", err.message)
+    })
+  });
+   
+  return contractProm as any;
 
-  console.log("Accounts: ");
-  console.log(accounts);
-
-
-  // return (await (t.send({
-  //   from: accounts[0],
-  //   gas: GAS_LIMIT_STANDARD,
-  // }) as any)) as T;
-  return t;
 }
 
-export function deployTutorialToken(): Promise<TutorialToken> {
-    var contract = deployContract<TutorialToken>("TutorialToken", TutorialTokenContractData.abi, TutorialTokenContractData.bytecode, 0);
+export async function deployTutorialToken(): Promise<TutorialToken> {
+    console.log("Deploying Contract from innner deploy tutorial token method: ");
+    var contract = await deployContract<TutorialToken>("TutorialToken", TutorialTokenContractData.abi, TutorialTokenContractData.bytecode, 0);
     console.log("Contract from innner deploy tutorial token method: " + contract);
     return contract;
 }
@@ -43,14 +56,14 @@ export function deployTutorialToken(): Promise<TutorialToken> {
 type MyProps = {};
 type MyState = {
   numErcBeingTraded: number
-  //contract: object
+  contract: TutorialToken 
 };
 class App extends React.Component<MyProps, MyState> {
   constructor(props: any) {
     super(props);
     this.state = {
-      numErcBeingTraded: 0
-      //contract: {}
+      numErcBeingTraded: 0,
+      contract: {} as TutorialToken
     };
 
     //this.handleErcInputChange = this.handleErcInputChange.bind(this);
@@ -58,10 +71,10 @@ class App extends React.Component<MyProps, MyState> {
 
   handleErcInputChange(event: any) {
     this.setState({ 
-      numErcBeingTraded: event.target.value 
+      numErcBeingTraded: event.target.value,
     });
     console.log("Num of ERC wanted to trade: " + this.state.numErcBeingTraded);
-    //var rate = this.state.contract.rate().call();
+    var rate = this.state.contract.methods.rate().call();
     var numErc = new BN(this.state.numErcBeingTraded);
     //var numTokens = rate.mul(numErc);
     //console.log("Num of Tutorial Tokens you can receive: " + numTokens.toString());
@@ -70,24 +83,22 @@ class App extends React.Component<MyProps, MyState> {
   async componentDidMount() {
     // TODO: Do all this stuff once onComponentDidMount
     // Same with all my async shit
-    if (typeof web3 !== 'undefined') {
-      web3Provider = web3.currentProvider;
-      web3 = new Web3(web3.currentProvider);
-    } else {
-      // set the provider you want from Web3.providers
-      web3Provider = new Web3.providers.HttpProvider('https://services.jade.builders/core-geth/kotti/1.11.2');
-      web3 = new Web3(web3Provider);
-    }
-    console.log(web3.currentProvider);
-
+      const ethereum = (window as any).ethereum
+      web3Provider = ethereum || web3.currentProvider;
+      // will crash if you do not have metamask 
+      await ethereum.send('eth_requestAccounts')
+      web3 = new Web3(ethereum);
+      web3.eth.getAccounts()
+        .then(console.log);
+         
     contract = await deployTutorialToken();
-    var contractMethods = contract._parent.methods;
-    console.dir(contract);
-    console.log("Contract deploy address: " + contract._parent.options.address);
+
+    this.setState({contract})
+    //console.log("Contract deploy address: " + contract._parent.options.address);
     //console.log("Contract called from method: " + contract);
     //console.log("Contract calling methods.rate().call(): " + contract.methods.rate().call());
     //console.log("Contract calling .methods: " + contract.rate().call());
-    console.log("Contract calling _parent methods: " + (await contract._parent.methods.rate().call()));
+    //console.log("Contract calling _parent methods: " + (await contract._parent.methods.rate().call()));
   }
 
   render() {  
