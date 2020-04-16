@@ -12,37 +12,18 @@ export let accounts: string[];
 let web3Provider;
 let contract: any;
 const ERC20_NETWORK = "https://services.jade.builders/core-geth/kotti/1.11.2"
-export async function deployContract<T>(contractName: string, abi:any, code:any, ...args: any[]): Promise<T> {
-  //const networkId = await web3.eth.net.getId();
-  //const deployedAddress = abi.networks[networkId].address;
+export async function deployContract<T>(contractName: string, abi: any, code: any, ...args: any[]): Promise<T> {
   const Contract = new web3.eth.Contract(abi);
   console.log("Contract1: ");
   console.log(Contract);
   const accounts = await web3.eth.getAccounts();
   console.log(accounts)
   console.log("deploying contract now")
-  const contractProm = new Promise((resolve, reject) => {
-    Contract.deploy({ data: code }).send({
-      from: accounts[0],
-    }).on("transactionHash", async (receipt)=>{
-      console.log("Getting txHash")
-      web3.eth.getTransactionReceipt(receipt, (err, txh)=>{
-      debugger
-      console.log(txh.contractAddress)
-      resolve(new web3.eth.Contract(abi, txh.contractAddress))
-      })
-    })
-    .on("receipt", (reciept) => {
-      console.log("Getting address:")
-      console.log(reciept.contractAddress)
-      resolve(new web3.eth.Contract(abi, reciept.contractAddress))
-    
-    }).on("error", (err) => {
-      console.error("Terrible disaster", err.message)
-    })
-  });
-   
-  return contractProm as any;
+
+  const contractResult = await Contract.deploy({ data: code }).send({
+    from: accounts[0]
+  })
+  return contractResult as any;
 
 }
 
@@ -84,21 +65,19 @@ class App extends React.Component<MyProps, MyState> {
     // TODO: Do all this stuff once onComponentDidMount
     // Same with all my async shit
       const ethereum = (window as any).ethereum
-      web3Provider = ethereum || web3.currentProvider;
-      // will crash if you do not have metamask 
-      await ethereum.send('eth_requestAccounts')
-      web3 = new Web3(ethereum);
-      web3.eth.getAccounts()
-        .then(console.log);
+      //TODO Ethereum enable may still be necessary
+      // await ethereum.enable()
+      web3Provider =  (window as any).web3.currentProvider;
+      // NOTE you might need this
+      //await ethereum.send('eth_requestAccounts')
+      
+      web3 = new Web3(web3Provider);
+      const accounts = await web3.eth.getAccounts()
+      console.log(accounts)
          
     contract = await deployTutorialToken();
 
     this.setState({contract})
-    //console.log("Contract deploy address: " + contract._parent.options.address);
-    //console.log("Contract called from method: " + contract);
-    //console.log("Contract calling methods.rate().call(): " + contract.methods.rate().call());
-    //console.log("Contract calling .methods: " + contract.rate().call());
-    //console.log("Contract calling _parent methods: " + (await contract._parent.methods.rate().call()));
   }
 
   render() {  
